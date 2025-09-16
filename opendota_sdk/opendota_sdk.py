@@ -1,111 +1,5 @@
 import requests
-from typing import Optional, Dict, Any, List, Union
-from dataclasses import dataclass, field
-from datetime import datetime
-
-
-@dataclass
-class Player:
-    account_id: int
-    personaname: str
-    name: Optional[str] = None
-    avatar: Optional[str] = None
-    avatarmedium: Optional[str] = None
-    avatarfull: Optional[str] = None
-    profileurl: Optional[str] = None
-    last_login: Optional[datetime] = None
-    loccountrycode: Optional[str] = None
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Player':
-        return cls(
-            account_id=data.get('account_id', 0),
-            personaname=data.get('profile', {}).get('personaname', ''),
-            name=data.get('profile', {}).get('name'),
-            avatar=data.get('profile', {}).get('avatar'),
-            avatarmedium=data.get('profile', {}).get('avatarmedium'),
-            avatarfull=data.get('profile', {}).get('avatarfull'),
-            profileurl=data.get('profile', {}).get('profileurl'),
-            last_login=datetime.fromtimestamp(data['profile']['last_login']) if data.get('profile', {}).get('last_login') else None,
-            loccountrycode=data.get('profile', {}).get('loccountrycode')
-        )
-
-
-@dataclass
-class Match:
-    match_id: int
-    duration: int
-    start_time: datetime
-    radiant_win: bool
-    game_mode: int
-    lobby_type: int
-    human_players: int
-    players: List[Dict[str, Any]] = field(default_factory=list)
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Match':
-        return cls(
-            match_id=data['match_id'],
-            duration=data.get('duration', 0),
-            start_time=datetime.fromtimestamp(data['start_time']),
-            radiant_win=data.get('radiant_win', False),
-            game_mode=data.get('game_mode', 0),
-            lobby_type=data.get('lobby_type', 0),
-            human_players=data.get('human_players', 0),
-            players=data.get('players', [])
-        )
-
-
-@dataclass
-class Hero:
-    id: int
-    name: str
-    localized_name: str
-    primary_attr: str
-    attack_type: str
-    roles: List[str] = field(default_factory=list)
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Hero':
-        return cls(
-            id=data['id'],
-            name=data['name'],
-            localized_name=data['localized_name'],
-            primary_attr=data['primary_attr'],
-            attack_type=data['attack_type'],
-            roles=data.get('roles', [])
-        )
-
-
-@dataclass
-class PlayerMatch:
-    match_id: int
-    player_slot: int
-    radiant_win: bool
-    duration: int
-    game_mode: int
-    lobby_type: int
-    hero_id: int
-    start_time: datetime
-    kills: int = 0
-    deaths: int = 0
-    assists: int = 0
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'PlayerMatch':
-        return cls(
-            match_id=data['match_id'],
-            player_slot=data.get('player_slot', 0),
-            radiant_win=data.get('radiant_win', False),
-            duration=data.get('duration', 0),
-            game_mode=data.get('game_mode', 0),
-            lobby_type=data.get('lobby_type', 0),
-            hero_id=data.get('hero_id', 0),
-            start_time=datetime.fromtimestamp(data['start_time']),
-            kills=data.get('kills', 0),
-            deaths=data.get('deaths', 0),
-            assists=data.get('assists', 0)
-        )
+from typing import Optional, Dict, Any, List
 
 
 class OpenDotaClient:
@@ -142,16 +36,14 @@ class OpenDotaClient:
             raise OpenDotaAPIError(f"Invalid JSON response: {e}")
     
     # Player endpoints
-    def get_player(self, account_id: int) -> Player:
+    def get_player(self, account_id: int) -> Dict[str, Any]:
         """Get player data"""
-        data = self._request(f"players/{account_id}")
-        return Player.from_dict(data)
+        return self._request(f"players/{account_id}")
     
-    def get_player_matches(self, account_id: int, limit: int = 20, **kwargs) -> List[PlayerMatch]:
+    def get_player_matches(self, account_id: int, limit: int = 20, **kwargs) -> List[Dict[str, Any]]:
         """Get player matches"""
         params = {"limit": limit, **kwargs}
-        data = self._request(f"players/{account_id}/matches", params)
-        return [PlayerMatch.from_dict(match) for match in data]
+        return self._request(f"players/{account_id}/matches", params)
     
     def get_player_heroes(self, account_id: int) -> List[Dict[str, Any]]:
         """Get player hero statistics"""
@@ -195,10 +87,9 @@ class OpenDotaClient:
         return self._request(f"players/{account_id}/rankings")
     
     # Match endpoints
-    def get_match(self, match_id: int) -> Match:
+    def get_match(self, match_id: int) -> Dict[str, Any]:
         """Get match details"""
-        data = self._request(f"matches/{match_id}")
-        return Match.from_dict(data)
+        return self._request(f"matches/{match_id}")
     
     def get_public_matches(self, **kwargs) -> List[Dict[str, Any]]:
         """Get public matches"""
@@ -209,10 +100,9 @@ class OpenDotaClient:
         return self._request("parsedMatches", kwargs)
     
     # Heroes endpoints
-    def get_heroes(self) -> List[Hero]:
+    def get_heroes(self) -> List[Dict[str, Any]]:
         """Get heroes list"""
-        data = self._request("heroes")
-        return [Hero.from_dict(hero) for hero in data]
+        return self._request("heroes")
     
     def get_hero_matches(self, hero_id: int) -> List[Dict[str, Any]]:
         """Get hero matches"""
@@ -223,7 +113,7 @@ class OpenDotaClient:
         return self._request(f"heroes/{hero_id}/matchups")
     
     def get_hero_durations(self, hero_id: int) -> List[Dict[str, Any]]:
-        """Get hero performance over a range of match durations"""
+        """Get hero durations"""
         return self._request(f"heroes/{hero_id}/durations")
     
     def get_hero_players(self, hero_id: int) -> List[Dict[str, Any]]:
